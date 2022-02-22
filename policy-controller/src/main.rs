@@ -5,11 +5,11 @@ use anyhow::{bail, Context, Result};
 use clap::Parser;
 use futures::prelude::*;
 use kubert::shutdown;
+use linkerd_policy_controller::admission;
 use linkerd_policy_controller::k8s::DefaultPolicy;
-use linkerd_policy_controller::{admin, admission};
 use linkerd_policy_controller_core::IpNet;
 use std::net::SocketAddr;
-use tokio::{sync::watch, time};
+use tokio::time;
 use tracing::{info, instrument};
 
 #[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
@@ -36,12 +36,12 @@ struct Args {
     #[clap(flatten)]
     server: kubert::server::ServerArgs,
 
+    #[clap(flatten)]
+    admin: kubert::AdminArgs,
+
     /// Disables the admission controller server.
     #[clap(long)]
     admission_controller_disabled: bool,
-
-    #[clap(long, default_value = "0.0.0.0:8080")]
-    admin_addr: SocketAddr,
 
     #[clap(long, default_value = "0.0.0.0:8090")]
     grpc_addr: SocketAddr,
@@ -69,7 +69,7 @@ struct Args {
 async fn main() -> Result<()> {
     let Args {
         client,
-        admin_addr,
+        admin,
         grpc_addr,
         server,
         admission_controller_disabled,
@@ -92,8 +92,8 @@ async fn main() -> Result<()> {
         .context("failed to initialize kubernetes client")?;
 
     // Spawn an admin server, failing readiness checks until the index is updated.
-    let (ready_tx, ready_rx) = watch::channel(false);
-    tokio::spawn(admin::serve(admin_addr, ready_rx));
+    let readiness = admin.spawn().readiness();
+    readiness.set(false);
 
     // Index cluster resources, returning a handle that supports lookups for the gRPC server.
     let handle = {
@@ -106,7 +106,7 @@ async fn main() -> Result<()> {
         let (handle, index) =
             linkerd_policy_controller::k8s::Index::new(cluster, default_policy, DETECT_TIMEOUT);
 
-        tokio::spawn(index.run(client.clone(), ready_tx));
+        tokio::spawn(index.run(client.clone(), readiness));
         handle
     };
 

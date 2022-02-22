@@ -799,11 +799,11 @@ dependencies = [
 [[package]]
 name = "kubert"
 version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "56a5b24efcebe82a17c8e0db17c2e3e5b1a06296b9f231a9893649a683c374a7"
+source = "git+https://github.com/olix0r/kubert.git?branch=ver/admin#f479706486b784ddef22d3960baab07562259023"
 dependencies = [
  "clap",
  "drain",
+ "futures-util",
  "hyper",
  "kube-client",
  "rustls-pemfile 0.3.0",
@@ -906,6 +906,7 @@ dependencies = [
  "async-stream",
  "async-trait",
  "futures",
+ "kubert",
  "linkerd-policy-controller-core",
  "linkerd-policy-controller-k8s-api",
  "parking_lot 0.12.0",

@@ -37,6 +37,7 @@ features = [
 version = "0.2.2"
 default-features = false
 features = [
+    "admin",
     "clap",
     "client",
     "log",
@@ -52,7 +53,6 @@ features = [
     "rt",
     "rt-multi-thread",
     "signal",
-    "sync",
 ]
 
 [target.x86_64-unknown-linux-gnu.dependencies]
